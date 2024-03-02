@@ -31,6 +31,8 @@ Node* createNode(int value) {
     return newNode;
 }
 
+#pragma region Matrix
+
 // Function to create a new matrix.
 MatrixLinkedList* createMatrix(int rows, int cols) {
 
@@ -119,6 +121,9 @@ void printMatrix(MatrixLinkedList* matrix) {
     }
 }
 
+#pragma endregion
+
+#pragma region Value
 // Function to change the value of a specific node in the matrix.
 void changeValue(MatrixLinkedList* matrix, int row, int col, int value) {
 
@@ -139,162 +144,161 @@ void changeValue(MatrixLinkedList* matrix, int row, int col, int value) {
 
     colPtr->value = value;
 }
+#pragma endregion
 
-//// Function to add new rows to the matrix.
-//void insertRow(MatrixLinkedList* matrix, int rowIndex) {
-//
-//    if (rowIndex < 0 || rowIndex > matrix->rows) {
-//		printf("Invalid row index.\n");
-//		return;
-//	}
-//
-//	Node* rowPtr = matrix->head;
-//	Node* previousRow = NULL;
-//	Node* currentRow = NULL;
-//
-//    for (int i = 0; i < rowIndex; i++) {
-//		previousRow = rowPtr;
-//		rowPtr = rowPtr->down;
-//	}
-//
-//    if (rowIndex == 0) {
-//		currentRow = createNode(0); // Create the first node of the row
-//		currentRow->down = rowPtr;
-//		matrix->head = currentRow;
-//	}
-//    else {
-//		currentRow = createNode(0); // Create the first node of the row
-//		currentRow->down = rowPtr;
-//		previousRow->down = currentRow;
-//	}
-//
-//	Node* temp = currentRow;
-//	Node* nextRow = NULL;
-//
-//    for (int i = 0; i < matrix->cols; i++) {
-//		nextRow = createNode(0); // Create and link the rest of the nodes in the row
-//		temp->right = nextRow;
-//		temp = nextRow;
-//	}
-//
-//	matrix->rows++;
-//}
+#pragma region Row
+// Function to add new rows to the matrix.
+void insertRow(MatrixLinkedList* matrix, int rowIndex) {
+
+    if (rowIndex < 0 || rowIndex > matrix->rows) {
+		printf("Invalid row index.\n");
+		return;
+	}
+
+	Node* rowPtr = matrix->head;
+	Node* previousRow = NULL;
+	Node* currentRow = NULL;
+
+    for (int i = 0; i < rowIndex; i++) {
+		previousRow = rowPtr;
+		rowPtr = rowPtr->down;
+	}
+
+    if (rowIndex == 0) {
+		currentRow = createNode(0); // Create the first node of the row
+		currentRow->down = rowPtr;
+		matrix->head = currentRow;
+	}
+    else {
+		currentRow = createNode(0); // Create the first node of the row
+		currentRow->down = rowPtr;
+		previousRow->down = currentRow;
+	}
+
+	Node* temp = currentRow;
+	Node* nextRow = NULL;
+
+    for (int i = 0; i < matrix->cols; i++) {
+		nextRow = createNode(0); // Create and link the rest of the nodes in the row
+		temp->right = nextRow;
+		temp = nextRow;
+	}
+
+	matrix->rows++;
+}
+
+// Funtion to remove a row from the matrix.
+void removeRow(MatrixLinkedList* matrix, int rowIndex) {
+
+    if (rowIndex < 0 || rowIndex >= matrix->rows) {
+		printf("Invalid row index.\n");
+		return;
+	}
+
+	Node* rowPtr = matrix->head;
+	Node* previousRow = NULL;
+
+    for (int i = 0; i < rowIndex; i++) {
+		previousRow = rowPtr;
+		rowPtr = rowPtr->down;
+	}
+
+    if (rowIndex == 0) {
+		matrix->head = rowPtr->down;
+	}
+    else {
+		previousRow->down = rowPtr->down;
+	}
+
+	free(rowPtr);
+	matrix->rows--;
+}
+#pragma endregion
+
+#pragma region Column
 
 //// Function to add new columns to the matrix.
-//void insertColumn(MatrixLinkedList* matrix, int columnIndex) {
+//void insertColumn(MatrixLinkedList* matrix, int colIndex) {
+//    if (colIndex < 0 || colIndex > matrix->cols) {
+//        printf("Invalid column index.\n");
+//        return;
+//    }
 //
-//    if (columnIndex < 0 || columnIndex > matrix->cols) {
+//    Node* colPtr = matrix->head;
+//    Node* previousCol = NULL;
+//    Node* currentCol = NULL;
+//
+//    for (int i = 0; i < colIndex; i++) {
+//        if (colPtr == NULL) {
+//            printf("Invalid column index.\n");
+//            return;
+//        }
+//        previousCol = colPtr;
+//        colPtr = colPtr->right;
+//    }
+//
+//    // Create the new column node
+//    currentCol = createNode(0);
+//
+//    // Insert the new column into the matrix
+//    if (colIndex == 0) {
+//        currentCol->right = matrix->head;
+//        matrix->head = currentCol;
+//    }
+//    else {
+//        currentCol->right = colPtr;
+//        previousCol->right = currentCol;
+//    }
+//
+//    // Link the new column nodes to the existing rows
+//    Node* temp = currentCol;
+//    Node* rowPtr = matrix->head;
+//    while (rowPtr != NULL && rowPtr->down != NULL) {
+//        Node* newRowNode = createNode(0);
+//        temp->down = newRowNode;
+//        temp = temp->down;
+//        rowPtr = rowPtr->down;
+//    }
+//
+//    matrix->cols++;
+//}
+//
+//// Function to remove a column from the matrix.
+//void removeColumn(MatrixLinkedList* matrix, int colIndex) {
+//    if (colIndex < 0 || colIndex >= matrix->cols) {
 //		printf("Invalid column index.\n");
 //		return;
 //	}
 //
-//	Node* rowPtr = matrix->head;
+//	Node* colPtr = matrix->head;
 //	Node* previousCol = NULL;
-//	Node* currentCol = NULL;
-//	Node* temp = NULL;
 //
-//    for (int i = 0; i < matrix->rows; i++) {
-//		currentCol = createNode(0); // Create the first node of the column
-//		temp = rowPtr;
-//        for (int j = 0; j < columnIndex; j++) {
-//			previousCol = temp;
-//			temp = temp->right;
+//    for (int i = 0; i < colIndex; i++) {
+//        if (colPtr == NULL) {
+//			printf("Invalid column index.\n");
+//			return;
 //		}
-//
-//        if (columnIndex == 0) {
-//			currentCol->right = temp;
-//			rowPtr = currentCol;
-//		}
-//        else {
-//			currentCol->right = temp;
-//			previousCol->right = currentCol;
-//		}
-//
-//		temp = currentCol;
-//		Node* nextCol = NULL;
-//
-//        for (int j = 0; j < matrix->rows; j++) {
-//			nextCol = createNode(0); // Create and link the rest of the nodes in the column
-//			temp->down = nextCol;
-//			temp = nextCol;
-//			rowPtr = rowPtr->down;
-//		}
+//		previousCol = colPtr;
+//		colPtr = colPtr->right;
 //	}
 //
-//	matrix->cols++;
-//}
-
-//// Function to delete a row from the matrix.
-//void deleteRow(MatrixLinkedList* matrix, int row) {
-//
-//    if (row < 0 || row >= matrix->rows) {
-//		printf("Invalid row index.\n");
-//		return;
-//	}
-//
-//	Node* rowPtr = matrix->head;
-//	Node* previousRow = NULL;
-//
-//    for (int i = 0; i < row; i++) {
-//		previousRow = rowPtr;
-//		rowPtr = rowPtr->down;
-//	}
-//
-//    if (rowPtr == matrix->head) {
-//		matrix->head = rowPtr->down;
+//    if (colIndex == 0) {
+//		matrix->head = colPtr->right;
 //	}
 //    else {
-//		previousRow->down = rowPtr->down;
+//		previousCol->right = colPtr->right;
 //	}
 //
-//	Node* temp = rowPtr;
-//	Node* nextRow = NULL;
-//
-//    for (int i = 0; i < matrix->cols; i++) {
-//		nextRow = temp->right;
-//		free(temp);
-//		temp = nextRow;
-//	}
-//
-//	free(rowPtr);
-//	matrix->rows--;
-//}
-
-//// Function to delete a column from the matrix.
-//void deleteColumn(MatrixLinkedList* matrix, int col) {
-//
-//    if (col < 0 || col >= matrix->cols) {
-//		printf("Invalid column index.\n");
-//		return;
-//	}
-//
-//	Node* rowPtr = matrix->head;
-//	Node* previousCol = NULL;
-//	Node* colPtr = NULL;
-//
-//    for (int i = 0; i < matrix->rows; i++) {
-//		colPtr = rowPtr;
-//        for (int j = 0; j < col; j++) {
-//			previousCol = colPtr;
-//			colPtr = colPtr->right;
-//		}
-//
-//        if (colPtr == rowPtr) {
-//			rowPtr = colPtr->right;
-//		}
-//        else {
-//			previousCol->right = colPtr->right;
-//		}
-//
-//		free(colPtr);
-//	}
-//
+//	free(colPtr);
 //	matrix->cols--;
 //}
 
+#pragma endregion // error
+
+
 int main() {
 
-    MatrixLinkedList* matrix;
+    MatrixLinkedList* matrix = createMatrix(5,5);
 
     loadMatrixFromFile(matrix, "Matrix.txt");
     printf("Matrix:\n");
@@ -306,11 +310,12 @@ int main() {
     printf("\nMatrix Changed:\n");
     printMatrix(matrix);
 
-    // Add a new row at index 2
-    //insertRow(matrix, 2);
-    //insertColumn(matrix, 1);
+    // Add a new row at index 2 and a new column at index 3
+    insertRow(matrix, 2);
+    removeRow(matrix, 1);
+    //insertColumn(matrix, 2);
 
-    printf("\nMatrix with new row:\n");
+    printf("\nMatrix with new row and new column:\n");
     printMatrix(matrix);
 
 
