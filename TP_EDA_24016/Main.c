@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#pragma region Structures
 typedef struct Node {
     int value;
     struct Node* right; // Pointer to the next node in the same row
@@ -12,8 +13,10 @@ typedef struct {
     int rows;   // Number of rows
     int cols;   // Number of columns
 } MatrixLinkedList;
+#pragma endregion
 
 
+#pragma region Node
 // Function to create a new node.
 Node* createNode(int value) {
 
@@ -30,9 +33,10 @@ Node* createNode(int value) {
 
     return newNode;
 }
+#pragma endregion
+
 
 #pragma region Matrix
-
 // Function to create a new matrix.
 MatrixLinkedList* createMatrix(int rows, int cols) {
 
@@ -65,32 +69,75 @@ MatrixLinkedList* createMatrix(int rows, int cols) {
     return matrix;
 }
 
-// Function to load a matrix from a file.
-void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename) {
+// Function to adjust the size of the matrix.
+void adjustMatrixSize(MatrixLinkedList* matrix, int newRows, int newCols) {
 
-    FILE* file = fopen(filename, "r");
+    if (newRows < 0 || newCols < 0) {
+		printf("Invalid matrix dimensions.\n");
+		return;
+	}
 
-    if (file == NULL) {
-        printf("File not found\n");
-        return;
-    }
+    // Create a new matrix with specified dimensions
+    Node* previousRow = NULL;
+    Node* currentRow = NULL;
 
-    int num;
-    char separator;
-    Node* temp = matrix->head;
-    Node* rowStart = temp;
-
-    while (fscanf(file, "%d%c", &num, &separator) != EOF) {
-        temp->value = num;
-        if (separator == ';') {
-            if (temp->right != NULL) temp = temp->right;
-        }
-        else { // New line
-            if (rowStart->down != NULL) {
-                rowStart = rowStart->down;
-                temp = rowStart;
+    for (int i = 0; i < newRows; i++) {
+        Node* tempNode = NULL;
+        for (int j = 0; j < newCols; j++) {
+            if (j == 0) {
+                currentRow = createNode(0); // Create the first node of the row
+                if (i == 0) {
+                    matrix->head = currentRow; // First node of first row is the head
+                }
+                else {
+                    previousRow->down = currentRow;
+                }
+                tempNode = currentRow;
+            }
+            else {
+                tempNode->right = createNode(0);
+                tempNode = tempNode->right;
             }
         }
+        previousRow = currentRow;
+    }
+
+    matrix->rows = newRows;
+    matrix->cols = newCols;
+}
+
+// Function to load a matrix from a file.
+void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("File not found");
+        exit(EXIT_FAILURE);
+    }
+
+    int rows = 0, cols = 0, ch;
+    while ((ch = fgetc(file)) != EOF) {
+        if (ch == ';') cols++;
+        if (ch == '\n') {
+            rows++;
+            cols = 0; // Reset column count for the next row
+        }
+    }
+    rewind(file); // Reset file pointer to start of the file
+
+    // Adjust the matrix size based on the file content
+    adjustMatrixSize(matrix, rows, cols + 1); // +1 as last value in a row does not have a ';' following it
+
+    // Now load the data
+    Node* rowPtr = matrix->head;
+    for (int i = 0; i < rows; i++) {
+        Node* colPtr = rowPtr;
+        for (int j = 0; j < cols + 1; j++) { // The +1 here is to account for the last column in each row
+            int value;
+            fscanf(file, "%d;", &value);
+            colPtr->value = value;
+            colPtr = colPtr->right;
+        }
+        rowPtr = rowPtr->down;
     }
 
     fclose(file);
@@ -120,8 +167,8 @@ void printMatrix(MatrixLinkedList* matrix) {
         rowPtr = rowPtr->down; // Move to the next row
     }
 }
-
 #pragma endregion
+
 
 #pragma region Value
 // Function to change the value of a specific node in the matrix.
@@ -145,6 +192,7 @@ void changeValue(MatrixLinkedList* matrix, int row, int col, int value) {
     colPtr->value = value;
 }
 #pragma endregion
+
 
 #pragma region Row
 // Function to add new rows to the matrix.
@@ -215,90 +263,119 @@ void removeRow(MatrixLinkedList* matrix, int rowIndex) {
 }
 #pragma endregion
 
+
 #pragma region Column
+// Function to add a new column to the matrix.
+void insertColumn(MatrixLinkedList* matrix, int columnIndex) {
+    if (columnIndex < 0 || columnIndex > matrix->cols) {
+        printf("Invalid column index.\n");
+        return;
+    }
 
-//// Function to add new columns to the matrix.
-//void insertColumn(MatrixLinkedList* matrix, int colIndex) {
-//    if (colIndex < 0 || colIndex > matrix->cols) {
-//        printf("Invalid column index.\n");
-//        return;
-//    }
-//
-//    Node* colPtr = matrix->head;
-//    Node* previousCol = NULL;
-//    Node* currentCol = NULL;
-//
-//    for (int i = 0; i < colIndex; i++) {
-//        if (colPtr == NULL) {
-//            printf("Invalid column index.\n");
-//            return;
-//        }
-//        previousCol = colPtr;
-//        colPtr = colPtr->right;
-//    }
-//
-//    // Create the new column node
-//    currentCol = createNode(0);
-//
-//    // Insert the new column into the matrix
-//    if (colIndex == 0) {
-//        currentCol->right = matrix->head;
-//        matrix->head = currentCol;
-//    }
-//    else {
-//        currentCol->right = colPtr;
-//        previousCol->right = currentCol;
-//    }
-//
-//    // Link the new column nodes to the existing rows
-//    Node* temp = currentCol;
-//    Node* rowPtr = matrix->head;
-//    while (rowPtr != NULL && rowPtr->down != NULL) {
-//        Node* newRowNode = createNode(0);
-//        temp->down = newRowNode;
-//        temp = temp->down;
-//        rowPtr = rowPtr->down;
-//    }
-//
-//    matrix->cols++;
-//}
-//
-//// Function to remove a column from the matrix.
-//void removeColumn(MatrixLinkedList* matrix, int colIndex) {
-//    if (colIndex < 0 || colIndex >= matrix->cols) {
-//		printf("Invalid column index.\n");
-//		return;
-//	}
-//
-//	Node* colPtr = matrix->head;
-//	Node* previousCol = NULL;
-//
-//    for (int i = 0; i < colIndex; i++) {
-//        if (colPtr == NULL) {
-//			printf("Invalid column index.\n");
-//			return;
-//		}
-//		previousCol = colPtr;
-//		colPtr = colPtr->right;
-//	}
-//
-//    if (colIndex == 0) {
-//		matrix->head = colPtr->right;
-//	}
-//    else {
-//		previousCol->right = colPtr->right;
-//	}
-//
-//	free(colPtr);
-//	matrix->cols--;
-//}
+    Node* currentRow = matrix->head;
+    Node* aboveNewNode = NULL; // This will track the new node above the current one being inserted
 
-#pragma endregion // error
+    for (int i = 0; i < matrix->rows; i++) {
+        Node* newNode = createNode(0); // Create the new node for this row
+
+        if (columnIndex == 0) {
+            // Inserting at the beginning of the row
+            newNode->right = currentRow;
+            if (i == 0) matrix->head = newNode; // Update the head if it's the first row
+            else aboveNewNode->down = newNode; // Link the new node below the previous new node
+        }
+        else {
+            // Inserting at or after columnIndex
+            Node* prevNode = currentRow;
+            for (int j = 0; j < columnIndex - 1 && prevNode->right != NULL; j++) {
+                prevNode = prevNode->right; // Navigate to the node before insertion point
+            }
+
+            // Insert the new node into the column
+            newNode->right = prevNode->right;
+            prevNode->right = newNode;
+
+            if (aboveNewNode != NULL) aboveNewNode->down = newNode; // Link from above if not the first row
+        }
+
+        aboveNewNode = newNode; // Update the aboveNewNode for the next iteration
+        if (currentRow != NULL) currentRow = currentRow->down; // Move to the next row
+    }
+
+    for (Node* temp = matrix->head; columnIndex > 0 && temp != NULL; columnIndex--, temp = temp->right) {
+        // At the end of each row iteration, we should have reached the right side of the new column.
+        // Now, we iterate down to link the `down` pointers of the new column.
+        Node* columnNode = temp;
+        while (columnNode != NULL && columnNode->right != NULL && columnNode->right->down != NULL) {
+            columnNode->right->down = columnNode->right->down->right; // Correctly link down pointers
+            columnNode = columnNode->down;
+        }
+    }
+
+    matrix->cols++; // Increment the column count
+}
+
+// Function to remove a column from the matrix.
+void removeColumn(MatrixLinkedList* matrix, int columnIndex) {
+
+    if (!matrix || columnIndex < 0 || columnIndex >= matrix->cols) {
+        printf("Invalid column index or null matrix.\n");
+        return;
+    }
+
+    // Check if the matrix has only one column
+    if (matrix->cols == 1) {
+        Node* currentRow = matrix->head;
+        while (currentRow != NULL) {
+            Node* toBeFreed = currentRow;
+            currentRow = currentRow->down; // Move down before freeing the current node
+            free(toBeFreed);
+        }
+        matrix->head = NULL; // No columns left
+        matrix->cols = 0;
+        return;
+    }
+
+    Node* currentRow = matrix->head;
+    Node* toBeFreed;
+
+    if (columnIndex == 0) {
+        Node* newHead = NULL; // New head for the matrix after column removal
+        for (int i = 0; i < matrix->rows; i++) {
+            toBeFreed = currentRow; // Node to be freed
+
+            // Update the head for the first row, for subsequent rows this updates the pointer for the row above
+            if (currentRow->right) { // Ensure there is a next column
+                if (i == 0) { // Update matrix head for the first row
+                    newHead = currentRow->right;
+                }
+
+                if (currentRow->down != NULL) { // Update down pointers correctly
+                    currentRow->right->down = currentRow->down->right;
+                }
+                else {
+                    currentRow->right->down = NULL;
+                }
+            }
+
+            currentRow = currentRow->down; // Move down to the next row before freeing the node to avoid losing the reference
+            free(toBeFreed); // Free the removed node
+        }
+        matrix->head = newHead; // Update the head of the matrix
+    }
+    else {
+        // Logic for removing columns other than the first one goes here
+    }
+
+    matrix->cols--; // Update the number of columns
+}
+#pragma endregion
 
 
+#pragma region Main
 int main() {
 
-    MatrixLinkedList* matrix = createMatrix(5,5);
+    MatrixLinkedList* matrix = createMatrix(0, 0);
 
     loadMatrixFromFile(matrix, "Matrix.txt");
     printf("Matrix:\n");
@@ -312,8 +389,11 @@ int main() {
 
     // Add a new row at index 2 and a new column at index 3
     insertRow(matrix, 2);
-    removeRow(matrix, 1);
-    //insertColumn(matrix, 2);
+    insertColumn(matrix, 3);
+
+    // Remove the first row and the first column
+    removeRow(matrix, 0);
+    removeColumn(matrix, 0);
 
     printf("\nMatrix with new row and new column:\n");
     printMatrix(matrix);
@@ -321,3 +401,4 @@ int main() {
 
     return 0;
 }
+#pragma endregion
