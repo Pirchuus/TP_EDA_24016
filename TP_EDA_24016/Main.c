@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
+
 
 #pragma region Structures
 /// <summary>
@@ -33,7 +35,6 @@ typedef struct
 /// <returns></returns>
 Node* createNode(int value) 
 {
-
     Node* newNode = (Node*)malloc(sizeof(Node));
 
     if (!newNode) 
@@ -161,7 +162,7 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
     int rows = 0, cols = 0, value, ch;
     bool firstChar = true;
 
-    // Conta a primeira coluna caso o arquivo comece imediatamente com números
+    // Count the number of rows and columns
     while ((ch = fgetc(file)) != EOF) 
     {
         if (firstChar) 
@@ -178,22 +179,22 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
         if (ch == '\n')
         {
             rows++;
-            firstChar = true; // Reseta para verdadeiro para contar colunas corretamente após uma quebra de linha
+            firstChar = true; // Reset the flag for the next line
         }
     }
 
-    // Ajuste para considerar a última linha se o arquivo não terminar com '\n'
+    // Increment the row count if the last line does not end with a newline character
     if (!firstChar) 
     {
         rows++;
     }
 
-    rewind(file); // Retorna ao início do arquivo para carregar os dados
+    rewind(file); // Return to the beginning of the file
 
-    // Ajusta o tamanho da matriz para refletir o conteúdo do arquivo
+    // Adjust the size of the matrix
     adjustMatrixSize(matrix, rows, cols);
 
-    // Carrega os dados
+    // Load the values from the file into the matrix
     Node* rowPtr = matrix->head;
 
     for (int i = 0; i < rows; i++)
@@ -202,7 +203,7 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
     
         for (int j = 0; j < cols; j++)
         {
-            if (fscanf(file, "%d;", &value) == 1)// Assegura que lê um valor antes de atribuir 
+            if (fscanf(file, "%d;", &value) == 1) // Read the value from the file
             {
                 colPtr->value = value;
                 colPtr = colPtr->right;
@@ -394,30 +395,41 @@ void removeRow(MatrixLinkedList* matrix, int rowIndex)
 {
     if (rowIndex < 0 || rowIndex >= matrix->rows)
     {
-		printf("Invalid row index.\n");
-		return;
-	}
+        printf("\n\nInvalid row index.\n\n");
+        return;
+    }
 
-	Node* rowPtr = matrix->head;
-	Node* previousRow = NULL;
-
-    for (int i = 0; i < rowIndex; i++) 
-    {
-		previousRow = rowPtr;
-		rowPtr = rowPtr->down;
-	}
+    Node* currentRow = NULL;
+    Node* previousRow = NULL;
+    Node* temp = NULL;
 
     if (rowIndex == 0) 
     {
-		matrix->head = rowPtr->down;
-	}
+        currentRow = matrix->head; // The row to be removed
+        matrix->head = currentRow->down; // Update the head of the matrix
+    }
     else 
     {
-		previousRow->down = rowPtr->down;
-	}
+        previousRow = matrix->head;
+        
+        for (int i = 0; i < rowIndex - 1; i++)
+        {
+            previousRow = previousRow->down;
+        }
+        
+        currentRow = previousRow->down; // The row to be removed
+        previousRow->down = currentRow->down; // Link previous row to the next row
+    }
 
-	free(rowPtr);
-	matrix->rows--;
+    // Iterate through the entire row to free each node
+    while (currentRow != NULL) 
+    {
+        temp = currentRow;
+        currentRow = currentRow->right; // Move to the next node in the row
+        free(temp); // Free the current node
+    }
+
+    matrix->rows--; // Decrement the row count
 }
 #pragma endregion
 
@@ -430,55 +442,61 @@ void removeRow(MatrixLinkedList* matrix, int rowIndex)
 /// <param name="columnIndex"></param>
 void insertColumn(MatrixLinkedList* matrix, int columnIndex) 
 {
-    if (columnIndex < 0 || columnIndex > matrix->cols)
+    if (columnIndex < 0 || columnIndex > matrix->cols) 
     {
         printf("Invalid column index.\n");
         return;
     }
 
-    Node* currentRow = matrix->head;
-    Node* aboveNewNode = NULL; // This will track the new node above the current one being inserted
-
-    for (int i = 0; i < matrix->rows; i++) 
+    // Insertion in the first column
+    if (columnIndex == 0) 
     {
-        Node* newNode = createNode(0); // Create the new node for this row
+        Node* newHeadColumn = NULL;
+        Node* lastNewNode = NULL;
+        Node* currentRow = matrix->head;
 
-        if (columnIndex == 0) 
+        for (int i = 0; i < matrix->rows; i++) 
         {
-            // Inserting at the beginning of the row
-            newNode->right = currentRow;
-            if (i == 0) matrix->head = newNode; // Update the head if it's the first row
-            else aboveNewNode->down = newNode; // Link the new node below the previous new node
-        }
-        else 
-        {
-            // Inserting at or after columnIndex
-            Node* prevNode = currentRow;
-            for (int j = 0; j < columnIndex - 1 && prevNode->right != NULL; j++) 
+            Node* newNode = createNode(0); // Create a new node for the first column
+
+            if (i == 0) 
             {
-                prevNode = prevNode->right; // Navigate to the node before insertion point
+                newHeadColumn = newNode; // The new node is the head of the new column
+            }
+            else 
+            {
+                lastNewNode->down = newNode; // Connect the new node to the previous node in the column
             }
 
-            // Insert the new node into the column
-            newNode->right = prevNode->right;
-            prevNode->right = newNode;
-
-            if (aboveNewNode != NULL) aboveNewNode->down = newNode; // Link from above if not the first row
+            newNode->right = currentRow; // The new node points to the current node in the row
+            lastNewNode = newNode; // Update the last new node
+            currentRow = currentRow->down; // Move to the next row
         }
 
-        aboveNewNode = newNode; // Update the aboveNewNode for the next iteration
-        if (currentRow != NULL) currentRow = currentRow->down; // Move to the next row
+        matrix->head = newHeadColumn; // Update the head of the matrix
     }
-
-    for (Node* temp = matrix->head; columnIndex > 0 && temp != NULL; columnIndex--, temp = temp->right) 
+    else 
     {
-        // At the end of each row iteration, we should have reached the right side of the new column.
-        // Now, we iterate down to link the `down` pointers of the new column.
-        Node* columnNode = temp;
-        while (columnNode != NULL && columnNode->right != NULL && columnNode->right->down != NULL)
+        // Insrtion in subsequent columns
+        Node* currentRow = matrix->head;
+
+        for (int i = 0; i < matrix->rows; i++) 
         {
-            columnNode->right->down = columnNode->right->down->right; // Correctly link down pointers
-            columnNode = columnNode->down;
+            Node* newNode = createNode(0);
+
+            if (columnIndex > 0) 
+            {
+                Node* prevNode = currentRow;
+                for (int j = 0; j < columnIndex - 1; j++) 
+                {
+                    prevNode = prevNode->right; // Move to the node before the insertion point
+                }
+                newNode->right = prevNode->right; // New node points to the node after the insertion point
+                prevNode->right = newNode; // Node before the insertion point points to the new node
+            }
+
+            // Move to the next row
+            currentRow = currentRow->down;
         }
     }
 
@@ -492,103 +510,108 @@ void insertColumn(MatrixLinkedList* matrix, int columnIndex)
 /// <param name="columnIndex"></param>
 void removeColumn(MatrixLinkedList* matrix, int columnIndex) 
 {
-    if (matrix == NULL || columnIndex < 0 || columnIndex >= matrix->cols) 
+    if (columnIndex < 0 || columnIndex >= matrix->cols) 
     {
-        printf("Invalid column index or null matrix.\n");
+        printf("Invalid column index.\n");
         return;
     }
 
     Node* currentRow = matrix->head;
     Node* toBeFreed = NULL;
 
-    while (currentRow != NULL) 
+    // Remove the first column
+    if (columnIndex == 0) 
     {
-        if (columnIndex == 0) 
+        while (currentRow != NULL) 
         {
-            // Remove the first node in the row
-            toBeFreed = currentRow;
-            currentRow = currentRow->right; // Move to the next node
+            toBeFreed = currentRow; // Node to be removed
+            currentRow = currentRow->right; // Update the current row to the next row
             free(toBeFreed); // Free the node
+            matrix->head = currentRow; // Update the head of the matrix
 
-            if (matrix->head == toBeFreed)
+            // Move to the next row
+            if (currentRow != NULL) 
             {
-                // If the head was removed, update the head pointer
-                matrix->head = currentRow;
+                currentRow = currentRow->down;
             }
-        }
-        else
-        {
-            Node* prevNode = currentRow;
-            
-            for (int i = 0; i < columnIndex - 1; i++)
-            {
-                prevNode = prevNode->right;
-            }
-            
-            toBeFreed = prevNode->right;
-            prevNode->right = toBeFreed ? toBeFreed->right : NULL;
-            free(toBeFreed); // Free the node
-        }
-
-        // Move to the next row
-        Node* nextRow = currentRow ? currentRow->down : NULL;
-        
-        if (columnIndex == 0 && nextRow != NULL) 
-        {
-            // If the first node was removed, link the `down` pointer of the previous row to the next row
-            currentRow = nextRow;
-        }
-        else 
-        {
-            // If not, move to the next node in the same row
-            currentRow = currentRow ? currentRow->down : NULL;
         }
     }
+    else 
+    {
+        // Remove subsequent columns
+        while (currentRow != NULL) 
+        {
+            Node* prevNode = currentRow;
+            for (int i = 0; i < columnIndex - 1; i++) 
+            {
+                prevNode = prevNode->right; // Move to the node before the one to be removed
+            }
+
+            toBeFreed = prevNode->right; // Node to be removed
+            if (toBeFreed != NULL) 
+            {
+                prevNode->right = toBeFreed->right; // Link the previous node to the next node
+                free(toBeFreed); // Free the node
+            }
+
+            currentRow = currentRow->down; // Move to the next row
+        }
+    }
+
     matrix->cols--; // Decrement the column count
 }
 #pragma endregion
 
 
 // Sum the max value of the matrix but only can use one value for each row and column e mostra os valores que foram usados
-int maxSum(MatrixLinkedList* matrix) {
+int maxSum(MatrixLinkedList* matrix)
+{
     int sum = 0;
-	int* usedRows = (int*)malloc(matrix->rows * sizeof(int));
-	int* usedCols = (int*)malloc(matrix->cols * sizeof(int));
+    int* usedRows = (int*)malloc(matrix->rows * sizeof(int));
+    int* usedCols = (int*)malloc(matrix->cols * sizeof(int));
 
-	for (int i = 0; i < matrix->rows; i++) {
-		usedRows[i] = 0;
-	}
+    for (int i = 0; i < matrix->rows; i++)
+    {
+        usedRows[i] = 0;
+    }
 
-	for (int i = 0; i < matrix->cols; i++) {
-		usedCols[i] = 0;
-	}
+    for (int i = 0; i < matrix->cols; i++)
+    {
+        usedCols[i] = 0;
+    }
 
-	Node* rowPtr = matrix->head;
-	Node* colPtr = NULL;
+    Node* rowPtr = matrix->head;
+    Node* colPtr = NULL;
 
-	for (int i = 0; i < matrix->rows; i++) {
-		colPtr = rowPtr;
-		int max = 0;
-		int maxIndex = 0;
+    for (int i = 0; i < matrix->rows; i++)
+    {
+        colPtr = rowPtr;
+        int max = INT_MIN; // Use INT_MIN to correctly handle negative values
+        int maxIndex = -1; // Initialize to an invalid index
 
-		for (int j = 0; j < matrix->cols; j++) {
-			if (colPtr->value > max && usedCols[j] == 0 && usedRows[i] == 0) {
-				max = colPtr->value;
-				maxIndex = j;
-			}
-			colPtr = colPtr->right;
-		}
+        for (int j = 0; j < matrix->cols; j++)
+        {
+            if (colPtr->value > max && usedCols[j] == 0 && usedRows[i] == 0)
+            {
+                max = colPtr->value;
+                maxIndex = j;
+            }
+            colPtr = colPtr->right;
+        }
 
-		usedCols[maxIndex] = 1;
-		usedRows[i] = 1;
-		sum += max;
-		printf("\nRow: %d, Column: %d, Value: %d", i, maxIndex, max);
-		rowPtr = rowPtr->down;
-	}
+        if (maxIndex != -1) // Ensure a maximum was found 
+        {
+            usedCols[maxIndex] = 1;
+            usedRows[i] = 1;
+            sum += max;
+            printf("\nRow: %d, Column: %d, Value: %d", i, maxIndex, max);
+        }
+        rowPtr = rowPtr->down;
+    }
 
-	free(usedRows);
-	free(usedCols);
-	return sum;
+    free(usedRows);
+    free(usedCols);
+    return sum;
 }
 
 
@@ -601,22 +624,23 @@ int main() {
     printf("Matrix:\n");
     printMatrix(matrix);
 
-    // Change the value of the node at row 2, column 2 to 100; (2;2); (1;4); (2;4); (3;0); (3;2); (3;4); (4;0); (4;2); (4;3); (4;4)
-    changeValue(matrix, 4, 4, 100000); // A column and row index of 2 corresponds to the third column and row
+    // Change the value of the node at row 2, column 2 to 100; 
+    // (2;2); (1;4); (2;4); (3;0); (3;2); (3;4); (4;0); (4;2); (4;3); (4;4) -- Se altero para 1000 nestes pontos, não está a ser utilizado sendo que é o maior valor
+    changeValue(matrix, 0, 0, 1000); // A column and row index of 2 corresponds to the third column and row
     printf("\nMatrix Changed:\n");
     printMatrix(matrix);
 
     // Add a new row and a new
-    /*insertRow(matrix, 4);
-    insertColumn(matrix, 3);
+    insertRow(matrix, 0);
+    //insertColumn(matrix, 0);
     printf("\n\n");
-    printMatrix(matrix);*/
+    printMatrix(matrix);
 
     // Remove one row and one column
-    /*removeRow(matrix, 2);
-    removeColumn(matrix, 2);
+    removeRow(matrix, 0);
+    //removeColumn(matrix, 0); -> Não é possível remover a primeira coluna
     printf("\nMatrix:\n");
-    printMatrix(matrix);*/
+    printMatrix(matrix);
 
     // Max sum of the matrix
     printf("\n\nMax sum of the matrix: %d\n", maxSum(matrix));
