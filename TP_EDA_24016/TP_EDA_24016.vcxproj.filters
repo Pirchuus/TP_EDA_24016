@@ -21,7 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Matrix.txt">
-      <Filter>Arquivos de Origem</Filter>
+      <Filter>Arquivos de Recurso</Filter>
     </Text>
   </ItemGroup>
 </Project>

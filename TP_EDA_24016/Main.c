@@ -333,6 +333,56 @@ void changeValue(MatrixLinkedList* matrix, int row, int col, int value)
 
     colPtr->value = value;
 }
+
+/// <summary>
+/// Function to get the max sum of the matrix using a backtracking approach
+/// </summary>
+/// <param name="row"></param>
+/// <param name="usedCols"></param>
+/// <param name="numRows"></param>
+/// <param name="numCols"></param>
+/// <param name="rowIndex"></param>
+/// <param name="currentSum"></param>
+/// <param name="bestSum"></param>
+/// <returns></returns>
+int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, int currentSum, int* bestSum) 
+{
+    if (rowIndex == numRows) 
+    {
+        if (currentSum > *bestSum) 
+        {
+            // Update the best sum
+            *bestSum = currentSum;
+        }
+        return 0;
+    }
+
+    int colIndex = 0;
+    
+    // Iterate through the nodes in the current row
+    for (Node* colNode = row; colNode != NULL && colIndex < numCols; colNode = colNode->right, ++colIndex) 
+    {
+        // If the current column has not been used
+        if (!(usedCols & (1 << colIndex)))
+        {
+            // Recursively call the function for the next row
+            maxSumBT(row->down, usedCols | (1 << colIndex), numRows, numCols, rowIndex + 1, currentSum + colNode->value, bestSum);
+        }
+    }
+    return *bestSum;
+}
+
+/// <summary>
+/// Function to get the max sum of the matrix but only can use one value for each row and column
+/// </summary>
+/// <param name="matrix"></param>
+/// <returns></returns>
+int maxSum(MatrixLinkedList* matrix) 
+{
+    int bestSum = INT_MIN;
+    maxSumBT(matrix->head, 0, matrix->rows, matrix->cols, 0, 0, &bestSum);
+    return bestSum;
+}
 #pragma endregion
 
 
@@ -563,58 +613,6 @@ void removeColumn(MatrixLinkedList* matrix, int columnIndex)
 #pragma endregion
 
 
-// Sum the max value of the matrix but only can use one value for each row and column e mostra os valores que foram usados
-int maxSum(MatrixLinkedList* matrix)
-{
-    int sum = 0;
-    int* usedRows = (int*)malloc(matrix->rows * sizeof(int));
-    int* usedCols = (int*)malloc(matrix->cols * sizeof(int));
-
-    for (int i = 0; i < matrix->rows; i++)
-    {
-        usedRows[i] = 0;
-    }
-
-    for (int i = 0; i < matrix->cols; i++)
-    {
-        usedCols[i] = 0;
-    }
-
-    Node* rowPtr = matrix->head;
-    Node* colPtr = NULL;
-
-    for (int i = 0; i < matrix->rows; i++)
-    {
-        colPtr = rowPtr;
-        int max = INT_MIN; // Use INT_MIN to correctly handle negative values
-        int maxIndex = -1; // Initialize to an invalid index
-
-        for (int j = 0; j < matrix->cols; j++)
-        {
-            if (colPtr->value > max && usedCols[j] == 0 && usedRows[i] == 0)
-            {
-                max = colPtr->value;
-                maxIndex = j;
-            }
-            colPtr = colPtr->right;
-        }
-
-        if (maxIndex != -1) // Ensure a maximum was found 
-        {
-            usedCols[maxIndex] = 1;
-            usedRows[i] = 1;
-            sum += max;
-            printf("\nRow: %d, Column: %d, Value: %d", i, maxIndex, max);
-        }
-        rowPtr = rowPtr->down;
-    }
-
-    free(usedRows);
-    free(usedCols);
-    return sum;
-}
-
-
 #pragma region Main
 int main() {
 
@@ -624,23 +622,22 @@ int main() {
     printf("Matrix:\n");
     printMatrix(matrix);
 
-    // Change the value of the node at row 2, column 2 to 100; 
-    // (2;2); (1;4); (2;4); (3;0); (3;2); (3;4); (4;0); (4;2); (4;3); (4;4) -- Se altero para 1000 nestes pontos, não está a ser utilizado sendo que é o maior valor
-    changeValue(matrix, 0, 0, 1000); // A column and row index of 2 corresponds to the third column and row
-    printf("\nMatrix Changed:\n");
-    printMatrix(matrix);
+    //// Change the value of the node at row 1, column 1 to 1000; 
+    //changeValue(matrix, 0, 0, 1000); // A column and row index of 0 corresponds to the first column and row
+    //printf("\nMatrix Changed:\n");
+    //printMatrix(matrix);
 
-    // Add a new row and a new
-    insertRow(matrix, 0);
+    //// Add a new row and a new column
+    //insertRow(matrix, 0);
     //insertColumn(matrix, 0);
-    printf("\n\n");
-    printMatrix(matrix);
+    //printf("\n\n");
+    //printMatrix(matrix);
 
-    // Remove one row and one column
-    removeRow(matrix, 0);
-    //removeColumn(matrix, 0); -> Não é possível remover a primeira coluna
-    printf("\nMatrix:\n");
-    printMatrix(matrix);
+    //// Remove one row and one column
+    //removeRow(matrix, 0);
+    //removeColumn(matrix, 0); // -> Não é consigo remover a primeira coluna
+    //printf("\nMatrix:\n");
+    //printMatrix(matrix);
 
     // Max sum of the matrix
     printf("\n\nMax sum of the matrix: %d\n", maxSum(matrix));
