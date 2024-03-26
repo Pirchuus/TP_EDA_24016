@@ -345,31 +345,31 @@ void changeValue(MatrixLinkedList* matrix, int row, int col, int value)
 /// <param name="currentSum"></param>
 /// <param name="bestSum"></param>
 /// <returns></returns>
-int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, int currentSum, int* bestSum)
+void maxSumBT(Node* row, bool* usedCols, int numRows, int numCols, int rowIndex, int currentSum, int* bestSum) 
 {
-    if (rowIndex == numRows)
+    if (rowIndex == numRows) // Reached the end of the matrix
     {
-        if (currentSum > *bestSum)
+        if (currentSum > *bestSum) 
         {
-            // Update the best sum
-            *bestSum = currentSum;
+            *bestSum = currentSum; // Update the best sum found so far
         }
-        return 0;
+        return;
     }
 
-    int colIndex = 0;
-
-    // Iterate through the nodes in the current row
-    for (Node* colNode = row; colNode != NULL && colIndex < numCols; colNode = colNode->right, ++colIndex)
+    Node* colNode = row; // Start from the first column of the current row
+    for (int colIndex = 0; colIndex < numCols; colIndex++) 
     {
-        // If the current column has not been used
-        if (!(usedCols & (1 << colIndex)))
+        if (!usedCols[colIndex] && colNode) // Check if the column is not used and the node is not null
         {
-            // Recursively call the function for the next row
-            maxSumBT(row->down, usedCols | (1 << colIndex), numRows, numCols, rowIndex + 1, currentSum + colNode->value, bestSum);
+            usedCols[colIndex] = true; // Mark the column as used
+            maxSumBT(row->down, usedCols, numRows, numCols, rowIndex + 1, currentSum + colNode->value, bestSum); // Recursive call
+            usedCols[colIndex] = false; // Backtrack: Unmark the column as used
+        }
+        if (colNode) 
+        {
+            colNode = colNode->right; // Move to the next column in the current row
         }
     }
-    return *bestSum;
 }
 
 /// <summary>
@@ -380,7 +380,16 @@ int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, in
 int maxSum(MatrixLinkedList* matrix)
 {
     int bestSum = INT_MIN;
-    maxSumBT(matrix->head, 0, matrix->rows, matrix->cols, 0, 0, &bestSum);
+    bool* usedCols = (bool*)calloc(matrix->cols, sizeof(bool)); // Allocate and initialize to false
+
+    if (!usedCols) {
+        perror("Failed to allocate memory for usedCols");
+        exit(EXIT_FAILURE);
+    }
+
+    maxSumBT(matrix->head, usedCols, matrix->rows, matrix->cols, 0, 0, &bestSum);
+
+    free(usedCols); // free the allocated memory
     return bestSum;
 }
 #pragma endregion
