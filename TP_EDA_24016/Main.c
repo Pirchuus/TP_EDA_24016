@@ -8,7 +8,7 @@
 /// <summary>
 /// Structure to represent a node in the matrix.
 /// </summary>
-typedef struct Node 
+typedef struct
 {
     int value;
     struct Node* right; // Pointer to the next node in the same row
@@ -18,7 +18,7 @@ typedef struct Node
 /// <summary>
 /// Structure to represent the matrix as a linked list.
 /// </summary>
-typedef struct 
+typedef struct
 {
     Node* head; // Pointer to the first node
     int rows;   // Number of rows
@@ -33,11 +33,11 @@ typedef struct
 /// </summary>
 /// <param name="value"></param>
 /// <returns></returns>
-Node* createNode(int value) 
+Node* createNode(int value)
 {
     Node* newNode = (Node*)malloc(sizeof(Node));
 
-    if (!newNode) 
+    if (!newNode)
     {
         perror("Failed to allocate memory for new node");
         exit(EXIT_FAILURE);
@@ -59,7 +59,7 @@ Node* createNode(int value)
 /// <param name="rows"></param>
 /// <param name="cols"></param>
 /// <returns></returns>
-MatrixLinkedList* createMatrix(int rows, int cols) 
+MatrixLinkedList* createMatrix(int rows, int cols)
 {
     MatrixLinkedList* matrix = (MatrixLinkedList*)malloc(sizeof(MatrixLinkedList));
     matrix->rows = rows;
@@ -68,22 +68,22 @@ MatrixLinkedList* createMatrix(int rows, int cols)
     Node* currentRow = NULL;
     Node* tempNode = NULL;
 
-    for (int i = 0; i < rows; i++) 
-    {    
+    for (int i = 0; i < rows; i++)
+    {
         currentRow = createNode(0); // Create the first node of the row
-        
-        if (i == 0) 
+
+        if (i == 0)
         {
             matrix->head = currentRow; // First node of first row is the head
         }
-        else 
+        else
         {
             previousRow->down = currentRow; // Link the previous row to the current row
         }
-        
+
         tempNode = currentRow;
 
-        for (int j = 1; j < cols; j++) 
+        for (int j = 1; j < cols; j++)
         {
             tempNode->right = createNode(0); // Create and link the rest of the nodes in the row
             tempNode = tempNode->right;
@@ -99,40 +99,40 @@ MatrixLinkedList* createMatrix(int rows, int cols)
 /// <param name="matrix"></param>
 /// <param name="newRows"></param>
 /// <param name="newCols"></param>
-void adjustMatrixSize(MatrixLinkedList* matrix, int newRows, int newCols) 
+void adjustMatrixSize(MatrixLinkedList* matrix, int newRows, int newCols)
 {
 
-    if (newRows < 0 || newCols < 0) 
-    {	
+    if (newRows < 0 || newCols < 0)
+    {
         printf("Invalid matrix dimensions.\n");
-		return;
-	}
+        return;
+    }
 
     // Create a new matrix with specified dimensions
     Node* previousRow = NULL;
     Node* currentRow = NULL;
 
-    for (int i = 0; i < newRows; i++) 
-    {    
+    for (int i = 0; i < newRows; i++)
+    {
         Node* tempNode = NULL;
-        
-        for (int j = 0; j < newCols; j++) 
+
+        for (int j = 0; j < newCols; j++)
         {
-            if (j == 0) 
+            if (j == 0)
             {
                 currentRow = createNode(0); // Create the first node of the row
-                if (i == 0) 
+                if (i == 0)
                 {
                     matrix->head = currentRow; // First node of first row is the head
                 }
-                else 
-                {            
+                else
+                {
                     previousRow->down = currentRow;
                 }
-               
+
                 tempNode = currentRow;
             }
-            else 
+            else
             {
                 tempNode->right = createNode(0);
                 tempNode = tempNode->right;
@@ -163,15 +163,15 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
     bool firstChar = true;
 
     // Count the number of rows and columns
-    while ((ch = fgetc(file)) != EOF) 
+    while ((ch = fgetc(file)) != EOF)
     {
-        if (firstChar) 
+        if (firstChar)
         {
             cols = 1;
             firstChar = false;
         }
 
-        if (ch == ';') 
+        if (ch == ';')
         {
             cols++;
         }
@@ -184,7 +184,7 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
     }
 
     // Increment the row count if the last line does not end with a newline character
-    if (!firstChar) 
+    if (!firstChar)
     {
         rows++;
     }
@@ -200,7 +200,7 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
     for (int i = 0; i < rows; i++)
     {
         Node* colPtr = rowPtr;
-    
+
         for (int j = 0; j < cols; j++)
         {
             if (fscanf(file, "%d;", &value) == 1) // Read the value from the file
@@ -219,16 +219,16 @@ void loadMatrixFromFile(MatrixLinkedList* matrix, const char* filename)
 /// </summary>
 /// <param name="number"></param>
 /// <returns></returns>
-int getNumberLength(int number) 
-{    
+int getNumberLength(int number)
+{
     int length = 0;
 
     if (number == 0) return 1;
-    
+
     if (number < 0) length = 1; // Add one for the negative sign
-    
-    while (number != 0) 
-    {    
+
+    while (number != 0)
+    {
         length++;
         number /= 10;
     }
@@ -240,21 +240,21 @@ int getNumberLength(int number)
 /// </summary>
 /// <param name="matrix"></param>
 /// <returns></returns>
-int getMaxNumberLength(MatrixLinkedList* matrix) 
+int getMaxNumberLength(MatrixLinkedList* matrix)
 {
-    
+
     int maxLength = 0;
     Node* rowPtr = matrix->head;
-    
-    while (rowPtr != NULL) 
-    {    
+
+    while (rowPtr != NULL)
+    {
         Node* colPtr = rowPtr;
-        
-        while (colPtr != NULL) 
-        {    
+
+        while (colPtr != NULL)
+        {
             int currentLength = getNumberLength(colPtr->value);
-            
-            if (currentLength > maxLength) 
+
+            if (currentLength > maxLength)
             {
                 maxLength = currentLength;
             }
@@ -269,9 +269,9 @@ int getMaxNumberLength(MatrixLinkedList* matrix)
 /// Function to print the matrix.
 /// </summary>
 /// <param name="matrix"></param>
-void printMatrix(MatrixLinkedList* matrix) 
+void printMatrix(MatrixLinkedList* matrix)
 {
-    if (matrix == NULL || matrix->head == NULL) 
+    if (matrix == NULL || matrix->head == NULL)
     {
         printf("The matrix is empty or not initialized.\n");
         return;
@@ -284,16 +284,16 @@ void printMatrix(MatrixLinkedList* matrix)
     {
         Node* colPtr = rowPtr;
 
-        for (int j = 0; j < matrix->cols; j++) 
+        for (int j = 0; j < matrix->cols; j++)
         {
-            if(colPtr != NULL) // Verifica se colPtr não é NULL antes de tentar acessar o valor
+            if (colPtr != NULL) // Check if colPrt is null before printing the value
             {
                 printf("%*d ", maxLength, colPtr->value); // Use a field width specifier
                 colPtr = colPtr->right;
             }
             else
             {
-                printf("%*s ", maxLength, " "); // Imprime espaço se colPtr for NULL
+                printf("%*s ", maxLength, " "); // Print spaces if the node is null
             }
         }
         printf("\n");
@@ -311,22 +311,22 @@ void printMatrix(MatrixLinkedList* matrix)
 /// <param name="row"></param>
 /// <param name="col"></param>
 /// <param name="value"></param>
-void changeValue(MatrixLinkedList* matrix, int row, int col, int value) 
+void changeValue(MatrixLinkedList* matrix, int row, int col, int value)
 {
-    if (row < 0 || row >= matrix->rows || col < 0 || col >= matrix->cols) 
+    if (row < 0 || row >= matrix->rows || col < 0 || col >= matrix->cols)
     {
         printf("Invalid row or column index.\n");
         return;
     }
 
     Node* rowPtr = matrix->head;
-    for (int i = 0; i < row; i++) 
+    for (int i = 0; i < row; i++)
     {
         rowPtr = rowPtr->down;
     }
 
     Node* colPtr = rowPtr;
-    for (int j = 0; j < col; j++) 
+    for (int j = 0; j < col; j++)
     {
         colPtr = colPtr->right;
     }
@@ -345,11 +345,11 @@ void changeValue(MatrixLinkedList* matrix, int row, int col, int value)
 /// <param name="currentSum"></param>
 /// <param name="bestSum"></param>
 /// <returns></returns>
-int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, int currentSum, int* bestSum) 
+int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, int currentSum, int* bestSum)
 {
-    if (rowIndex == numRows) 
+    if (rowIndex == numRows)
     {
-        if (currentSum > *bestSum) 
+        if (currentSum > *bestSum)
         {
             // Update the best sum
             *bestSum = currentSum;
@@ -358,9 +358,9 @@ int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, in
     }
 
     int colIndex = 0;
-    
+
     // Iterate through the nodes in the current row
-    for (Node* colNode = row; colNode != NULL && colIndex < numCols; colNode = colNode->right, ++colIndex) 
+    for (Node* colNode = row; colNode != NULL && colIndex < numCols; colNode = colNode->right, ++colIndex)
     {
         // If the current column has not been used
         if (!(usedCols & (1 << colIndex)))
@@ -377,7 +377,7 @@ int maxSumBT(Node* row, int usedCols, int numRows, int numCols, int rowIndex, in
 /// </summary>
 /// <param name="matrix"></param>
 /// <returns></returns>
-int maxSum(MatrixLinkedList* matrix) 
+int maxSum(MatrixLinkedList* matrix)
 {
     int bestSum = INT_MIN;
     maxSumBT(matrix->head, 0, matrix->rows, matrix->cols, 0, 0, &bestSum);
@@ -392,48 +392,48 @@ int maxSum(MatrixLinkedList* matrix)
 /// </summary>
 /// <param name="matrix"></param>
 /// <param name="rowIndex"></param>
-void insertRow(MatrixLinkedList* matrix, int rowIndex) 
+void insertRow(MatrixLinkedList* matrix, int rowIndex)
 {
-    if (rowIndex < 0 || rowIndex > matrix->rows) 
+    if (rowIndex < 0 || rowIndex > matrix->rows)
     {
-		printf("Invalid row index.\n");
-		return;
-	}
+        printf("Invalid row index.\n");
+        return;
+    }
 
-	Node* rowPtr = matrix->head;
-	Node* previousRow = NULL;
-	Node* currentRow = NULL;
+    Node* rowPtr = matrix->head;
+    Node* previousRow = NULL;
+    Node* currentRow = NULL;
 
-    for (int i = 0; i < rowIndex; i++) 
+    for (int i = 0; i < rowIndex; i++)
     {
-		previousRow = rowPtr;
-		rowPtr = rowPtr->down;
-	}
+        previousRow = rowPtr;
+        rowPtr = rowPtr->down;
+    }
 
-    if (rowIndex == 0) 
+    if (rowIndex == 0)
     {
-		currentRow = createNode(0); // Create the first node of the row
-		currentRow->down = rowPtr;
-		matrix->head = currentRow;
-	}
-    else 
+        currentRow = createNode(0); // Create the first node of the row
+        currentRow->down = rowPtr;
+        matrix->head = currentRow;
+    }
+    else
     {
-		currentRow = createNode(0); // Create the first node of the row
-		currentRow->down = rowPtr;
-		previousRow->down = currentRow;
-	}
+        currentRow = createNode(0); // Create the first node of the row
+        currentRow->down = rowPtr;
+        previousRow->down = currentRow;
+    }
 
-	Node* temp = currentRow;
-	Node* nextRow = NULL;
+    Node* temp = currentRow;
+    Node* nextRow = NULL;
 
-    for (int i = 0; i < matrix->cols; i++) 
+    for (int i = 0; i < matrix->cols; i++)
     {
-		nextRow = createNode(0); // Create and link the rest of the nodes in the row
-		temp->right = nextRow;
-		temp = nextRow;
-	}
+        nextRow = createNode(0); // Create and link the rest of the nodes in the row
+        temp->right = nextRow;
+        temp = nextRow;
+    }
 
-	matrix->rows++;
+    matrix->rows++;
 }
 
 /// <summary>
@@ -453,26 +453,26 @@ void removeRow(MatrixLinkedList* matrix, int rowIndex)
     Node* previousRow = NULL;
     Node* temp = NULL;
 
-    if (rowIndex == 0) 
+    if (rowIndex == 0)
     {
         currentRow = matrix->head; // The row to be removed
         matrix->head = currentRow->down; // Update the head of the matrix
     }
-    else 
+    else
     {
         previousRow = matrix->head;
-        
+
         for (int i = 0; i < rowIndex - 1; i++)
         {
             previousRow = previousRow->down;
         }
-        
+
         currentRow = previousRow->down; // The row to be removed
         previousRow->down = currentRow->down; // Link previous row to the next row
     }
 
     // Iterate through the entire row to free each node
-    while (currentRow != NULL) 
+    while (currentRow != NULL)
     {
         temp = currentRow;
         currentRow = currentRow->right; // Move to the next node in the row
@@ -490,30 +490,30 @@ void removeRow(MatrixLinkedList* matrix, int rowIndex)
 /// </summary>
 /// <param name="matrix"></param>
 /// <param name="columnIndex"></param>
-void insertColumn(MatrixLinkedList* matrix, int columnIndex) 
+void insertColumn(MatrixLinkedList* matrix, int columnIndex)
 {
-    if (columnIndex < 0 || columnIndex > matrix->cols) 
+    if (columnIndex < 0 || columnIndex > matrix->cols)
     {
         printf("Invalid column index.\n");
         return;
     }
 
     // Insertion in the first column
-    if (columnIndex == 0) 
+    if (columnIndex == 0)
     {
         Node* newHeadColumn = NULL;
         Node* lastNewNode = NULL;
         Node* currentRow = matrix->head;
 
-        for (int i = 0; i < matrix->rows; i++) 
+        for (int i = 0; i < matrix->rows; i++)
         {
             Node* newNode = createNode(0); // Create a new node for the first column
 
-            if (i == 0) 
+            if (i == 0)
             {
                 newHeadColumn = newNode; // The new node is the head of the new column
             }
-            else 
+            else
             {
                 lastNewNode->down = newNode; // Connect the new node to the previous node in the column
             }
@@ -525,19 +525,19 @@ void insertColumn(MatrixLinkedList* matrix, int columnIndex)
 
         matrix->head = newHeadColumn; // Update the head of the matrix
     }
-    else 
+    else
     {
         // Insrtion in subsequent columns
         Node* currentRow = matrix->head;
 
-        for (int i = 0; i < matrix->rows; i++) 
+        for (int i = 0; i < matrix->rows; i++)
         {
             Node* newNode = createNode(0);
 
-            if (columnIndex > 0) 
+            if (columnIndex > 0)
             {
                 Node* prevNode = currentRow;
-                for (int j = 0; j < columnIndex - 1; j++) 
+                for (int j = 0; j < columnIndex - 1; j++)
                 {
                     prevNode = prevNode->right; // Move to the node before the insertion point
                 }
@@ -558,9 +558,9 @@ void insertColumn(MatrixLinkedList* matrix, int columnIndex)
 /// </summary>
 /// <param name="matrix"></param>
 /// <param name="columnIndex"></param>
-void removeColumn(MatrixLinkedList* matrix, int columnIndex) 
+void removeColumn(MatrixLinkedList* matrix, int columnIndex)
 {
-    if (columnIndex < 0 || columnIndex >= matrix->cols) 
+    if (columnIndex < 0 || columnIndex >= matrix->cols)
     {
         printf("Invalid column index.\n");
         return;
@@ -570,9 +570,9 @@ void removeColumn(MatrixLinkedList* matrix, int columnIndex)
     Node* toBeFreed = NULL;
 
     // Remove the first column
-    if (columnIndex == 0) 
+    if (columnIndex == 0)
     {
-        while (currentRow != NULL) 
+        while (currentRow != NULL)
         {
             toBeFreed = currentRow; // Node to be removed
             currentRow = currentRow->right; // Update the current row to the next row
@@ -580,25 +580,25 @@ void removeColumn(MatrixLinkedList* matrix, int columnIndex)
             matrix->head = currentRow; // Update the head of the matrix
 
             // Move to the next row
-            if (currentRow != NULL) 
+            if (currentRow != NULL)
             {
                 currentRow = currentRow->down;
             }
         }
     }
-    else 
+    else
     {
         // Remove subsequent columns
-        while (currentRow != NULL) 
+        while (currentRow != NULL)
         {
             Node* prevNode = currentRow;
-            for (int i = 0; i < columnIndex - 1; i++) 
+            for (int i = 0; i < columnIndex - 1; i++)
             {
                 prevNode = prevNode->right; // Move to the node before the one to be removed
             }
 
             toBeFreed = prevNode->right; // Node to be removed
-            if (toBeFreed != NULL) 
+            if (toBeFreed != NULL)
             {
                 prevNode->right = toBeFreed->right; // Link the previous node to the next node
                 free(toBeFreed); // Free the node
@@ -619,28 +619,109 @@ int main() {
     MatrixLinkedList* matrix = createMatrix(0, 0);
 
     loadMatrixFromFile(matrix, "Matrix.txt");
-    printf("Matrix:\n");
+    printf("\nMatrix:\n");
     printMatrix(matrix);
+    printf("\n\n");
 
-    //// Change the value of the node at row 1, column 1 to 1000; 
-    //changeValue(matrix, 0, 0, 1000); // A column and row index of 0 corresponds to the first column and row
-    //printf("\nMatrix Changed:\n");
-    //printMatrix(matrix);
+    int choice, row, col, newValue;
 
-    //// Add a new row and a new column
-    //insertRow(matrix, 0);
-    //insertColumn(matrix, 0);
-    //printf("\n\n");
-    //printMatrix(matrix);
+    do {
+        printf("\nMenu:\n");
+        printf("1. Update Matrix\n");
+        printf("2. Add Row\n");
+        printf("3. Add Column\n");
+        printf("4. Remove Row\n");
+        printf("5. Remove Column\n");
+        printf("6. Highest Sum\n");
+        printf("0. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
 
-    //// Remove one row and one column
-    //removeRow(matrix, 0);
-    //removeColumn(matrix, 0); // -> Não é consigo remover a primeira coluna
-    //printf("\nMatrix:\n");
-    //printMatrix(matrix);
+        switch (choice) 
+        {
+            case 1:
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("Row: ");
+                scanf("%d", &row);
+                printf("Column: ");
+                scanf("%d", &col);
+                printf("New Value: ");
+                scanf("%d", &newValue);
+                changeValue(matrix, row - 1, col - 1, newValue);
+                printf("\nValue updated successfully.\n\n");
+                printMatrix(matrix);
+                break;
 
-    // Max sum of the matrix
-    printf("\n\nMax sum of the matrix: %d\n", maxSum(matrix));
+            case 2:
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("Index where to insert the new Row: ");
+                scanf("%d", &row);
+                insertRow(matrix, row - 1);
+                printf("\nRow added successfully.\n\n");
+                printMatrix(matrix);
+                break;
+            
+            case 3: 
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("Index where to insert the new Column: ");
+                scanf("%d", &col);
+                insertColumn(matrix, col - 1);
+                printf("\nColumn added successfully.\n\n");
+                printMatrix(matrix);
+                break;
+
+            case 4:
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("Enter the row index to remove: ");
+                scanf("%d", &row);
+                removeRow(matrix, row - 1);
+                printf("\nRow removed successfully.\n\n");
+                printMatrix(matrix);
+                break;
+            
+            case 5:
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("Enter the column index to remove: ");
+                scanf("%d", &col);
+                removeColumn(matrix, col - 1);
+                printf("\nColumn removed successfully.\n\n");
+                printMatrix(matrix);
+                break;
+            
+            case 6:
+                system("cls");
+                printf("\nMatrix:\n");
+                printMatrix(matrix);
+                printf("\n\n");
+                printf("The highest sum is: %d\n", maxSum(matrix));
+                break;
+
+            case 0:
+                printf("Exiting the program...\n");
+				break;
+            
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    } while (choice != 0);
+
+    // Free the memory allocated for the matrix
+    free(matrix);
 
     return 0;
 }
