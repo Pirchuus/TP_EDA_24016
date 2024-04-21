@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Main2.c" />
     <ClCompile Include="Main.c" />
   </ItemGroup>
   <ItemGroup>
