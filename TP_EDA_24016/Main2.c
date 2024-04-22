@@ -16,7 +16,6 @@ typedef struct
     Node** vertices;
     int numVertices;
     int size;
-    int directed;
 } Graph;
 #pragma endregion
 
@@ -121,14 +120,25 @@ void removeEdge(Graph* g, int from, int to)
 #pragma endregion
 
 #pragma region GraphFunctions
-Graph* createGraph(int size, int directed) 
+Graph* createGraph(int initialSize) 
 {
     Graph* g = malloc(sizeof(Graph));
+    if (!g) 
+    {
+        perror("Failed to allocate memory for graph");
+        exit(EXIT_FAILURE);
+    }
 
-    g->vertices = malloc(size * sizeof(Node*));
+    g->vertices = malloc(initialSize * sizeof(Node*));
+    if (!g->vertices) 
+    {
+        free(g); // Clean up previously allocated graph memory before exiting
+        perror("Failed to allocate memory for vertices");
+        exit(EXIT_FAILURE);
+    }
+    
     g->numVertices = 0;
-    g->size = size;
-    g->directed = directed;
+    g->size = initialSize;
 
     return g;
 }
@@ -145,7 +155,7 @@ void freeGraph(Graph* g)
     free(g);
 }
 
-void loadMatrixFromFile(Graph* g, const char* filename)
+void loadGraphFromFile(Graph* g, const char* filename)
 {
     FILE* file = fopen(filename, "r");
 
@@ -160,7 +170,7 @@ void loadMatrixFromFile(Graph* g, const char* filename)
     int numRows = 0;
     int numCols = 0;
 
-    // Primeiro, determinar o n�mero de colunas
+    // Primeiro, determinar o número de colunas
     if (fgets(line, sizeof(line), file)) 
     {
         char* token = strtok(line, ";");
@@ -173,7 +183,7 @@ void loadMatrixFromFile(Graph* g, const char* filename)
     }
     rewind(file);
 
-    // Carregar os v�rtices
+    // Carregar os vértices
     while (fgets(line, sizeof(line), file)) 
     {
         numRows++;
@@ -195,12 +205,12 @@ void loadMatrixFromFile(Graph* g, const char* filename)
         int row = i / numCols;
         int col = i % numCols;
 
-        // Conex�o para a direita
+        // Conexão para a direita
         if (col < numCols - 1) 
         {
             addEdge(g, i, i + 1);
         }
-        // Conex�o para baixo
+        // Conexão para baixo
         if (row < numRows - 1) 
         {
             addEdge(g, i, i + numCols);
@@ -222,7 +232,7 @@ void generateDotFile(Graph* g, const char* filename)
     fprintf(file, "digraph G {\n");
     for (int i = 0; i < g->numVertices; i++) 
     {
-        // Imprime o n� com seu valor. Por exemplo: A [label="5"];
+        // Imprime o nó com seu valor. Por exemplo: A [label="5"];
         fprintf(file, "    %d [label=\"%d\"];\n", g->vertices[i]->id, g->vertices[i]->value);
     }
 
@@ -230,7 +240,7 @@ void generateDotFile(Graph* g, const char* filename)
     {
         for (int j = 0; j < g->vertices[i]->numAdj; j++)
         {
-            // Imprime uma aresta do n� i para cada um de seus adjacentes.
+            // Imprime uma aresta do nó i para cada um de seus adjacentes.
             fprintf(file, "    %d -> %d;\n", i, g->vertices[i]->adjacents[j]->id);
         }
     }
@@ -239,14 +249,79 @@ void generateDotFile(Graph* g, const char* filename)
     fclose(file);
 }
 
+
+----------------------------------------------------------------------------------------------
+void dfsUtil(Graph* g, int v, int visited[], int path[], int* pathIndex, int* maxSum, int currentSum, int bestPath[], int* bestPathLen) 
+{
+    visited[v] = 1;
+    path[(*pathIndex)++] = v;
+    currentSum += g->vertices[v]->value;
+
+    // Se é um nó folha e a soma é maior que a máxima encontrada
+    if (currentSum > *maxSum) 
+    {
+        *maxSum = currentSum;
+        *bestPathLen = *pathIndex;
+        memcpy(bestPath, path, (*pathIndex) * sizeof(int));
+    }
+
+    // Recursão para todos os vértices adjacentes não visitados
+    for (int i = 0; i < g->vertices[v]->numAdj; i++) 
+    {
+        int adj = g->vertices[v]->adjacents[i]->id;
+        if (!visited[adj]) {
+            dfsUtil(g, adj, visited, path, pathIndex, maxSum, currentSum, bestPath, bestPathLen);
+        }
+    }
+
+    // Backtrack
+    visited[v] = 0;
+    (*pathIndex)--;
+}
+
+void dfs(Graph* g, int startVertex, int* maxSum, int bestPath[], int* bestPathLen) 
+{
+    int* visited = calloc(g->numVertices, sizeof(int));
+    int* path = malloc(g->numVertices * sizeof(int));
+    int pathIndex = 0;
+    *maxSum = 0;
+    *bestPathLen = 0;
+
+    dfsUtil(g, startVertex, visited, path, &pathIndex, maxSum, 0, bestPath, bestPathLen);
+
+    free(visited);
+    free(path);
+}
+----------------------------------------------------------------------------------------------
+
+    
 #pragma region Main
 int main()
 {
-    Graph* g = createGraph(10, 0);
+    Graph* g = createGraph(10);
 
     loadMatrixFromFile(g, "Matrix.txt");
     generateDotFile(g, "graph.dot");
+
+    int maxSum = 0;
+    int* bestPath = malloc(g->numVertices * sizeof(int));
+    int bestPathLen = 0;
+
+    dfs(g, 0, &maxSum, bestPath, &bestPathLen);
+
+    printf("Maior soma dos valores dos vertices: %d\n", maxSum);
+    printf("Caminho com a maior soma: ");
+    for (int i = 0; i < bestPathLen; i++) 
+    {
+        printf("%d ", bestPath[i]);
+    }
+    printf("\n");
+
+    // Generate a image from a .dot file using Graphviz
+    system("dot -Tpng graph.dot -o graph.png");
+    system("start graph.png");
     freeGraph(g);
+    free(bestPath);
     return 0;
 }
 #pragma endregion
