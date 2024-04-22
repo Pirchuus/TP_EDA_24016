@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gvc.h>
+#include <graph.h>
 
 #pragma region Graph
 typedef struct node
@@ -219,39 +221,50 @@ void loadGraphFromFile(Graph* g, const char* filename)
 }
 #pragma endregion
 
-void generateDotFile(Graph* g, const char* filename) 
+void generateGraphvizFile(Graph* g, const char* filename) 
 {
-    FILE* file = fopen(filename, "w");
+    GVC_t *gvc;
+    Agraph_t *graph;
+    Agnode_t *nodes[g->numVertices];
+    char label[32];
 
-    if (!file)
-    {
-        perror("Unable to create file");
-        exit(EXIT_FAILURE);
-    }
+    // Iniciar o contexto Graphviz
+    gvc = gvContext();
 
-    fprintf(file, "digraph G {\n");
+    // Criar um grafo direcionado
+    graph = agopen("G", Agdirected, NULL);
+
+    // Adicionar nós ao grafo
     for (int i = 0; i < g->numVertices; i++) 
     {
-        // Imprime o nó com seu valor. Por exemplo: A [label="5"];
-        fprintf(file, "    %d [label=\"%d\"];\n", g->vertices[i]->id, g->vertices[i]->value);
+        snprintf(label, sizeof(label), "%d", g->vertices[i]->value);
+        nodes[i] = agnode(graph, label, 1);
+        agsafeset(nodes[i], "label", label, "");
     }
 
-    for (int i = 0; i < g->numVertices; i++)
+    // Adicionar arestas ao grafo
+    for (int i = 0; i < g->numVertices; i++) 
     {
-        for (int j = 0; j < g->vertices[i]->numAdj; j++)
+        for (int j = 0; j < g->vertices[i]->numAdj; j++) 
         {
-            // Imprime uma aresta do nó i para cada um de seus adjacentes.
-            fprintf(file, "    %d -> %d;\n", i, g->vertices[i]->adjacents[j]->id);
+            int adjId = g->vertices[i]->adjacents[j]->id;
+            agedge(graph, nodes[i], nodes[adjId], NULL, 1);
         }
     }
 
-    fprintf(file, "}\n");
-    fclose(file);
+    // Layout e renderização do grafo
+    gvLayout(gvc, graph, "dot");
+    gvRenderFilename(gvc, graph, "png", filename);
+
+    // Liberar recursos
+    gvFreeLayout(gvc, graph);
+    agclose(graph);
+    gvFreeContext(gvc);
 }
 
 
 ----------------------------------------------------------------------------------------------
-void dfsUtil(Graph* g, int v, int visited[], int path[], int* pathIndex, int* maxSum, int currentSum, int bestPath[], int* bestPathLen) 
+void dfsBacktraking(Graph* g, int v, int visited[], int path[], int* pathIndex, int* maxSum, int currentSum, int bestPath[], int* bestPathLen) 
 {
     visited[v] = 1;
     path[(*pathIndex)++] = v;
@@ -270,7 +283,7 @@ void dfsUtil(Graph* g, int v, int visited[], int path[], int* pathIndex, int* ma
     {
         int adj = g->vertices[v]->adjacents[i]->id;
         if (!visited[adj]) {
-            dfsUtil(g, adj, visited, path, pathIndex, maxSum, currentSum, bestPath, bestPathLen);
+            dfsBacktraking(g, adj, visited, path, pathIndex, maxSum, currentSum, bestPath, bestPathLen);
         }
     }
 
@@ -287,7 +300,7 @@ void dfs(Graph* g, int startVertex, int* maxSum, int bestPath[], int* bestPathLe
     *maxSum = 0;
     *bestPathLen = 0;
 
-    dfsUtil(g, startVertex, visited, path, &pathIndex, maxSum, 0, bestPath, bestPathLen);
+    dfsBacktraking(g, startVertex, visited, path, &pathIndex, maxSum, 0, bestPath, bestPathLen);
 
     free(visited);
     free(path);
@@ -301,7 +314,7 @@ int main()
     Graph* g = createGraph(10);
 
     loadMatrixFromFile(g, "Matrix.txt");
-    generateDotFile(g, "graph.dot");
+    generateGraphvizFile(g, "graph.png");
 
     int maxSum = 0;
     int* bestPath = malloc(g->numVertices * sizeof(int));
@@ -317,9 +330,6 @@ int main()
     }
     printf("\n");
 
-    // Generate a image from a .dot file using Graphviz
-    system("dot -Tpng graph.dot -o graph.png");
-    system("start graph.png");
     freeGraph(g);
     free(bestPath);
     return 0;
