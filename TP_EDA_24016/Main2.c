@@ -263,7 +263,7 @@ void generateGraphvizFile(Graph* g, const char* filename)
 }
 
 
-----------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------
 void dfsBacktraking(Graph* g, int v, int visited[], int path[], int* pathIndex, int* maxSum, int currentSum, int bestPath[], int* bestPathLen) 
 {
     visited[v] = 1;
@@ -305,9 +305,25 @@ void dfs(Graph* g, int startVertex, int* maxSum, int bestPath[], int* bestPathLe
     free(visited);
     free(path);
 }
-----------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------
 
-    
+#pragma region PrintFunctions
+void printGraphAdjacencies(Graph* g) 
+{
+    printf("Listas de Adjacência do Grafo:\n");
+    for (int i = 0; i < g->numVertices; i++) 
+    {
+        Node* vertex = g->vertices[i];
+        printf("%d: %d => ", vertex->id, vertex->value, vertex->numAdj);
+        for (int j = 0; j < vertex->numAdj; j++) 
+        {
+            printf("%d ", vertex->adjacents[j]->id);
+        }
+        printf("\n");
+    }
+}
+#pragma endregion
+
 #pragma region Main
 int main()
 {
