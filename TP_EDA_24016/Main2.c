@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <gvc.h>
+#include <graph.h>
 
 #pragma region Graph
 typedef struct node
@@ -16,7 +18,6 @@ typedef struct
     Node** vertices;
     int numVertices;
     int size;
-    int directed;
 } Graph;
 #pragma endregion
 
@@ -121,14 +122,25 @@ void removeEdge(Graph* g, int from, int to)
 #pragma endregion
 
 #pragma region GraphFunctions
-Graph* createGraph(int size, int directed) 
+Graph* createGraph(int initialSize) 
 {
     Graph* g = malloc(sizeof(Graph));
+    if (!g) 
+    {
+        perror("Failed to allocate memory for graph");
+        exit(EXIT_FAILURE);
+    }
 
-    g->vertices = malloc(size * sizeof(Node*));
+    g->vertices = malloc(initialSize * sizeof(Node*));
+    if (!g->vertices) 
+    {
+        free(g); // Clean up previously allocated graph memory before exiting
+        perror("Failed to allocate memory for vertices");
+        exit(EXIT_FAILURE);
+    }
+    
     g->numVertices = 0;
-    g->size = size;
-    g->directed = directed;
+    g->size = initialSize;
 
     return g;
 }
@@ -145,7 +157,7 @@ void freeGraph(Graph* g)
     free(g);
 }
 
-void loadMatrixFromFile(Graph* g, const char* filename)
+void loadGraphFromFile(Graph* g, const char* filename)
 {
     FILE* file = fopen(filename, "r");
 
@@ -160,7 +172,7 @@ void loadMatrixFromFile(Graph* g, const char* filename)
     int numRows = 0;
     int numCols = 0;
 
-    // Primeiro, determinar o n�mero de colunas
+    // Primeiro, determinar o número de colunas
     if (fgets(line, sizeof(line), file)) 
     {
         char* token = strtok(line, ";");
@@ -173,7 +185,7 @@ void loadMatrixFromFile(Graph* g, const char* filename)
     }
     rewind(file);
 
-    // Carregar os v�rtices
+    // Carregar os vértices
     while (fgets(line, sizeof(line), file)) 
     {
         numRows++;
@@ -195,12 +207,12 @@ void loadMatrixFromFile(Graph* g, const char* filename)
         int row = i / numCols;
         int col = i % numCols;
 
-        // Conex�o para a direita
+        // Conexão para a direita
         if (col < numCols - 1) 
         {
             addEdge(g, i, i + 1);
         }
-        // Conex�o para baixo
+        // Conexão para baixo
         if (row < numRows - 1) 
         {
             addEdge(g, i, i + numCols);
@@ -209,44 +221,133 @@ void loadMatrixFromFile(Graph* g, const char* filename)
 }
 #pragma endregion
 
-void generateDotFile(Graph* g, const char* filename) 
+void generateGraphvizFile(Graph* g, const char* filename) 
 {
-    FILE* file = fopen(filename, "w");
+    GVC_t *gvc;
+    Agraph_t *graph;
+    Agnode_t *nodes[g->numVertices];
+    char label[32];
 
-    if (!file)
-    {
-        perror("Unable to create file");
-        exit(EXIT_FAILURE);
-    }
+    // Iniciar o contexto Graphviz
+    gvc = gvContext();
 
-    fprintf(file, "digraph G {\n");
+    // Criar um grafo direcionado
+    graph = agopen("G", Agdirected, NULL);
+
+    // Adicionar nós ao grafo
     for (int i = 0; i < g->numVertices; i++) 
     {
-        // Imprime o n� com seu valor. Por exemplo: A [label="5"];
-        fprintf(file, "    %d [label=\"%d\"];\n", g->vertices[i]->id, g->vertices[i]->value);
+        snprintf(label, sizeof(label), "%d", g->vertices[i]->value);
+        nodes[i] = agnode(graph, label, 1);
+        agsafeset(nodes[i], "label", label, "");
     }
 
-    for (int i = 0; i < g->numVertices; i++)
+    // Adicionar arestas ao grafo
+    for (int i = 0; i < g->numVertices; i++) 
     {
-        for (int j = 0; j < g->vertices[i]->numAdj; j++)
+        for (int j = 0; j < g->vertices[i]->numAdj; j++) 
         {
-            // Imprime uma aresta do n� i para cada um de seus adjacentes.
-            fprintf(file, "    %d -> %d;\n", i, g->vertices[i]->adjacents[j]->id);
+            int adjId = g->vertices[i]->adjacents[j]->id;
+            agedge(graph, nodes[i], nodes[adjId], NULL, 1);
         }
     }
 
-    fprintf(file, "}\n");
-    fclose(file);
+    // Layout e renderização do grafo
+    gvLayout(gvc, graph, "dot");
+    gvRenderFilename(gvc, graph, "png", filename);
+
+    // Liberar recursos
+    gvFreeLayout(gvc, graph);
+    agclose(graph);
+    gvFreeContext(gvc);
 }
+
+
+//----------------------------------------------------------------------------------------------
+void dfsBacktraking(Graph* g, int v, int visited[], int path[], int* pathIndex, int* maxSum, int currentSum, int bestPath[], int* bestPathLen) 
+{
+    visited[v] = 1;
+    path[(*pathIndex)++] = v;
+    currentSum += g->vertices[v]->value;
+
+    // Se é um nó folha e a soma é maior que a máxima encontrada
+    if (currentSum > *maxSum) 
+    {
+        *maxSum = currentSum;
+        *bestPathLen = *pathIndex;
+        memcpy(bestPath, path, (*pathIndex) * sizeof(int));
+    }
+
+    // Recursão para todos os vértices adjacentes não visitados
+    for (int i = 0; i < g->vertices[v]->numAdj; i++) 
+    {
+        int adj = g->vertices[v]->adjacents[i]->id;
+        if (!visited[adj]) {
+            dfsBacktraking(g, adj, visited, path, pathIndex, maxSum, currentSum, bestPath, bestPathLen);
+        }
+    }
+
+    // Backtrack
+    visited[v] = 0;
+    (*pathIndex)--;
+}
+
+void dfs(Graph* g, int startVertex, int* maxSum, int bestPath[], int* bestPathLen) 
+{
+    int* visited = calloc(g->numVertices, sizeof(int));
+    int* path = malloc(g->numVertices * sizeof(int));
+    int pathIndex = 0;
+    *maxSum = 0;
+    *bestPathLen = 0;
+
+    dfsBacktraking(g, startVertex, visited, path, &pathIndex, maxSum, 0, bestPath, bestPathLen);
+
+    free(visited);
+    free(path);
+}
+//----------------------------------------------------------------------------------------------
+
+#pragma region PrintFunctions
+void printGraphAdjacencies(Graph* g) 
+{
+    printf("Listas de Adjacência do Grafo:\n");
+    for (int i = 0; i < g->numVertices; i++) 
+    {
+        Node* vertex = g->vertices[i];
+        printf("%d: %d => ", vertex->id, vertex->value, vertex->numAdj);
+        for (int j = 0; j < vertex->numAdj; j++) 
+        {
+            printf("%d ", vertex->adjacents[j]->id);
+        }
+        printf("\n");
+    }
+}
+#pragma endregion
 
 #pragma region Main
 int main()
 {
-    Graph* g = createGraph(10, 0);
+    Graph* g = createGraph(10);
 
     loadMatrixFromFile(g, "Matrix.txt");
-    generateDotFile(g, "graph.dot");
+    generateGraphvizFile(g, "graph.png");
+
+    int maxSum = 0;
+    int* bestPath = malloc(g->numVertices * sizeof(int));
+    int bestPathLen = 0;
+
+    dfs(g, 0, &maxSum, bestPath, &bestPathLen);
+
+    printf("Maior soma dos valores dos vertices: %d\n", maxSum);
+    printf("Caminho com a maior soma: ");
+    for (int i = 0; i < bestPathLen; i++) 
+    {
+        printf("%d ", bestPath[i]);
+    }
+    printf("\n");
+
     freeGraph(g);
+    free(bestPath);
     return 0;
 }
 #pragma endregion
